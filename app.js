@@ -1,10 +1,15 @@
 const express = require('express')
 const app = express()
+const exphbs = require('express-handlebars')
+const handlebars = exphbs.create({})
+
+app.engine('handlebars', handlebars.engine)
+app.set('view engine', 'handlebars')
 
 const PORT = process.env.PORT || 5000
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/view/index.html')
+    res.render('formulario')
 })
 
 app.listen(PORT, () => {
