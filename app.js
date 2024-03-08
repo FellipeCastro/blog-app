@@ -6,17 +6,20 @@ const handlebars = exphbs.create({})
 
 const { categorias } = require('./models/Categoria.js')
 
+// Template Engine
+app.engine('handlebars', handlebars.engine)
+app.set('view engine', 'handlebars')
+
 // ENV com dados do Mongo
 require('dotenv').config()
 
-app.engine('handlebars', handlebars.engine)
-app.set('view engine', 'handlebars')
+
 
 const PORT = process.env.PORT || 5000
 
 // Conexão com MongoDB
 const Schema = mongoose.Schema
-mongoose.conect(process.env.MONGO_DB, 
+mongoose.connect(process.env.MONGO_DB, 
     {useNewUrlParser: true})
     .then(() => {
         console.log('MongoDb Rodando')
@@ -25,7 +28,7 @@ mongoose.conect(process.env.MONGO_DB,
     })
 
 app.get('/', (req, res) => {
-    res.render('formulario')
+    res.render('layouts/main')
 })
 
 app.listen(PORT, () => {
