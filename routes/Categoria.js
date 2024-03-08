@@ -6,8 +6,8 @@ const mongoose = require('mongoose')
 const { categorias } = require('../models/Categoria.js')
 
 // Rotas Categorias
-router.get('/categorias', (req, res) => {
-    categorias.find().lean().then((categorias) => {
+router.get('/categorias', (req,res) =>{
+    categorias.find().lean().then((categorias) =>{
         res.render('admin/categorias', {categorias: categorias})
     })
 })

@@ -6,6 +6,10 @@ const handlebars = exphbs.create({})
 
 const { categorias } = require('./models/Categoria.js')
 
+// Rotas
+const categoria = require('./routes/Categoria.js')
+app.use('/admin', categoria)
+
 // Template Engine
 app.engine('handlebars', handlebars.engine)
 app.set('view engine', 'handlebars')
@@ -19,17 +23,12 @@ const PORT = process.env.PORT || 5000
 
 // Conexão com MongoDB
 const Schema = mongoose.Schema
-mongoose.connect(process.env.MONGO_DB, 
-    {useNewUrlParser: true})
+mongoose.connect(process.env.MONGO_DB, /*{useNewUrlParser: true} */)
     .then(() => {
         console.log('MongoDb Rodando')
     }).catch((err) => {
         console.log(`Erro ao conectar com MongoDB: ${err}`)
     })
-
-app.get('/', (req, res) => {
-    res.render('layouts/main')
-})
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`)
