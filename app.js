@@ -2,12 +2,19 @@ const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
 const exphbs = require('express-handlebars')
+const path = require('path')
 const handlebars = exphbs.create({})
 
+// Diretorio publico
+app.use(express.static(path.join(__dirname, '/public')))
+
+// Importar Models
 const { categorias } = require('./models/Categoria.js')
 
 // Rotas
 const categoria = require('./routes/Categoria.js')
+
+// Rotas para uso
 app.use('/admin', categoria)
 
 // Template Engine
