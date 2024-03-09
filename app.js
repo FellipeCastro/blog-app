@@ -5,6 +5,10 @@ const exphbs = require('express-handlebars')
 const path = require('path')
 const handlebars = exphbs.create({})
 
+// Encoded
+app.use(express.urlencoded({extended: true}))
+app.use(express.json())
+
 // Diretorio publico
 app.use(express.static(path.join(__dirname, '/public')))
 

@@ -12,4 +12,17 @@ router.get('/categorias', (req,res) =>{
     })
 })
 
+router.get('/categorias/add', (req, res) => {
+    res.render('admin/addcategoria')
+})
+
+router.post('/categoria/nova', (req, res) => {
+    const novaCategoria = new categorias({
+        nome: req.body.nome,
+        slug: req.body.slug
+    })
+    novaCategoria.save()
+    res.redirect('/admin/categorias')
+})
+
 module.exports = router
