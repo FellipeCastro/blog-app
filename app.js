@@ -17,9 +17,11 @@ const { categorias } = require('./models/Categoria.js')
 
 // Rotas
 const categoria = require('./routes/Categoria.js')
+const usuario = require('./routes/usuario.js')
 
 // Rotas para uso
 app.use('/admin', categoria)
+app.use('/admin', usuario)
 
 // Template Engine
 app.engine('handlebars', handlebars.engine)
