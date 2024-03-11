@@ -25,4 +25,10 @@ router.post('/categoria/nova', (req, res) => {
     res.redirect('/admin/categorias')
 })
 
+router.post(('/categoria/apagar', (req, res) => {
+    categorias.deleteOne({
+        _id: req.body.id
+    })
+}))
+
 module.exports = router
