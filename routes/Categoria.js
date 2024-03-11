@@ -25,10 +25,40 @@ router.post('/categoria/nova', (req, res) => {
     res.redirect('/admin/categorias')
 })
 
-router.post(('/categoria/apagar', (req, res) => {
+router.get('/categorias/edit/:id', (req, res) => {
+    categorias.findOne({
+        _id: req.params.id
+    })
+    .lean()
+    .then((categorias) => {
+        res.render('admin/editcategoria', {categorias: categorias})
+    })
+})
+
+router.post('/categorias/edit', (req, res) => {
+    let filter = { _id: req.body.id }
+    let update = { nome: req.body.nome, slug: req.body.slug }
+
+    categorias.findByIdAndUpdate(filter, update)
+    .then(() => {
+        res.redirect('/admin/categorias')
+    })
+    .catch(err => {
+        console.log(`Erro ao atualizar categorias: ${err}`)
+    })
+})
+
+router.post('/categoria/apagar', (req, res) => {
     categorias.deleteOne({
         _id: req.body.id
     })
-}))
+    .then(() => {
+        res.redirect('/admin/categorias')
+    })
+    .catch(err => {
+        console.log(`Erro ao apagar categoria: ${err}`)
+        res.redirect('/admin/categorias')
+    })
+})
 
 module.exports = router
