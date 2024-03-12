@@ -2,6 +2,8 @@ const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
 const exphbs = require('express-handlebars')
+const session = require('express-session')
+const passaport = require('passport')
 const path = require('path')
 const handlebars = exphbs.create({})
 
@@ -25,6 +27,16 @@ const postagem = require('./routes/postagem.js')
 app.use('/admin', categoria)
 app.use('/admin', usuario)
 app.use('/admin', postagem)
+
+// Sessão
+app.use(session({
+    secret: 'blog',
+    resave: true,
+    saveUninitialized: true
+}))
+
+app.use(passaport.initialize())
+app.use(passaport.session())
 
 // Template Engine
 app.engine('handlebars', handlebars.engine)
