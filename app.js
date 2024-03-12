@@ -33,7 +33,30 @@ app.set('view engine', 'handlebars')
 // ENV com dados do Mongo
 require('dotenv').config()
 
-const PORT = process.env.PORT || 5000
+// Home page
+app.get('/', (req, res) => {
+    postagens
+        .find()
+        .populate('categoria')
+        .sort({date: 'desc'})
+        .lean()
+        .then((postagens) =>{
+            res.render('home', { postagens: postagens })
+        }).catch((err) => {
+            res.redirect("/404")
+        })
+})
+
+app.get('/:id', (req, res) => {
+    postagens
+        .findOne({ slug: req.params.id })
+        .lean()
+        .then((postagens) => {
+            res.render('ler', { postagens: postagens })
+        }).catch((err) => {
+            res.redirect("/404")
+        })
+})
 
 // Conexão com MongoDB
 const Schema = mongoose.Schema
@@ -43,6 +66,8 @@ mongoose.connect(process.env.MONGO_DB, /*{useNewUrlParser: true} */)
     }).catch((err) => {
         console.log(`Erro ao conectar com MongoDB: ${err}`)
     })
+
+const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`)
