@@ -14,14 +14,17 @@ app.use(express.static(path.join(__dirname, '/public')))
 
 // Importar Models
 const { categorias } = require('./models/Categoria.js')
+const { postagens } = require('./models/Postagem.js')
 
 // Rotas
 const categoria = require('./routes/Categoria.js')
 const usuario = require('./routes/usuario.js')
+const postagem = require('./routes/postagem.js')
 
 // Rotas para uso
 app.use('/admin', categoria)
 app.use('/admin', usuario)
+app.use('/admin', postagem)
 
 // Template Engine
 app.engine('handlebars', handlebars.engine)
