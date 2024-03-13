@@ -1,5 +1,5 @@
 module.exports = {
-    eAdmin: (req, res, next) {
+    eAdmin: (req, res, next) => {
         if (req.isAuthenticaded() && req.user.eAdmin == 0) {
             return next()
         }
