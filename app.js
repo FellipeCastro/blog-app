@@ -1,104 +1,137 @@
-const express = require('express');
-const app = express();
-const exphbs = require('express-handlebars');
-const session = require('express-session');
-const flash = require('connect-flash');
-const handlebars = exphbs.create({});
-const mongoose = require('mongoose');
-const path = require('path');
-const passport = require("passport");
-const moment = require("moment");
+// Carregando Módulos
+require('dotenv').config()
+const express = require('express')
+const exphbs = require('express-handlebars')
+const handlebars = exphbs.create({})
+const bodyParser = require('body-parser')
+const app = express()
+const admin = require('./routes/admin.js')
+const usuarios = require('./routes/usuario.js')
+const path = require('path')
+const mongoose = require('mongoose')
+const session = require('express-session')
+const flash = require('connect-flash')
 
-// Models
-const { postagens } = require("./models/Postagem")
+require('./models/Postagem.js')
+const Postagem = mongoose.model('postagens')
 
-// Passport de autenticacao
-require("./config/auth")(passport)
+require('./models/Categoria.js')
+const Categoria = mongoose.model('categorias')
 
-// ENV com dados do Mongo
-require('dotenv').config();
+const passport = require('passport')
+require('./config/auth.js')(passport)
 
-// Rotas
-const postagem = require('./routes/postagem');
-const usuario = require('./routes/usuario');
-const categoria = require('./routes/categoria');
+// Configurações
 
-// Encoded
-app.use(express.urlencoded({extended: true})); 
-app.use(express.json());
-
-// Sessao
+// Sessão 
 app.use(session({
-    secret:"blog-em-node-js",
+    secret: 'secret',
     resave: true,
     saveUninitialized: true
 }))
-
-app.use(passport.initialize());
-app.use(passport.session());
-app.use(flash());
-
-// Template Engine
-app.engine('handlebars', handlebars.engine);
-app.set('view engine', 'handlebars');
-
-// Public Functions
-app.use(express.static(path.join( __dirname, '/public' )));
-
-// Diretorio das Imagens
-const imagemPath = path.join(__dirname, '/uploads');
-app.use("/uploads",express.static(imagemPath));
-
-// Rotas
-app.use('/admin', postagem)
-app.use('/admin', usuario)
-app.use('/admin', categoria)
+app.use(passport.initialize())
+app.use(passport.session())
+app.use(flash())
 
 // Middleware
-app.use((req,res,next) => {
-    res.locals.success_msg = req.flash('success_msg');
-    res.locals.error_msg = req.flash('error_msg');
-    res.locals.error =req.flash("error")
-    res.locals.user = req.user || null;
-    res.locals.moment = moment;
-    next();
-});
+app.use((req, res, next) => {
+    res.locals.success_msg = req.flash('success_msg')
+    res.locals.error_msg = req.flash('error_msg')
+    res.locals.error = req.flash('error')
+    res.locals.user = req.user || null
+    
+    next()
+})
 
-// Conecation MongoDB
-const Schema = mongoose.Schema;
-mongoose.connect(process.env.MONGO_DB,
-{useNewUrlParser: true})
+// Body Parser
+app.use(bodyParser.urlencoded({extended: true}))
+app. use(bodyParser.json())
+
+// Handlebars
+app.engine('handlebars', handlebars.engine)
+app.set('view engine', 'handlebars')
+
+// Mongoose
+const dbUser = process.env.DB_USER
+const dbPassword = process.env.DB_PASS
+
+const Schema = mongoose.Schema
+mongoose.connect(`mongodb+srv://${dbUser}:${dbPassword}@cluster0.xkxence.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`)
 .then(()=>{
-    console.log('Mongo conectado')
+    console.log('MongoDB conectado')
 }).catch((err)=> {
-    console.log('Erro ao conectar ao Mongo online')
-});
+    console.log(`Erro ao conectar ao MongoDB: ${err}`)
+})
 
-// Porta de acesso
-const PORT = process.env.PORT || 5005
+// Public
+app.use(express.static(path.join(__dirname, 'public')))
 
-// Home page
+// Rotas
 app.get('/', (req, res) => {
-    postagens.find().populate("categoria").sort({date:"desc"})
-    .lean().then((postagens) =>{
-        res.render('home', { postagens: postagens })
+    Postagem.find().lean().populate('categoria').sort({ data: 'desc' }).then((postagens) => {
+        res.render('index', { postagens: postagens })
     }).catch((err) => {
-        res.redirect("/404")
+        req.flash('error_msg', 'Erro ao renderizar postagens')
+        res.redirect('/404')
+        console.log(err)
     })
-});
+})
 
-app.get('/:id', (req, res) => {
-    postagens.findOne({slug:req.params.id}).lean().then((postagens) =>{
-        res.render('ler', { postagens: postagens })
+app.get('/postagem/:slug', (req, res) => {
+    Postagem.findOne({ slug: req.params.slug }).lean().then((postagem) => {
+        if (postagem) {
+            res.render('postagem/index', { postagem: postagem })
+        } else {
+            req.flash('error_msg', 'Essa postagem não existe')
+            res.redirect('/')
+        }
     }).catch((err) => {
-        res.redirect("/404")
+        req.flash('error_msg', 'Erro interno')
+        res.redirect('/')
+        console.log(err)
     })
-});
+})
 
-app.get("/404", (req,res) => {
+app.get('/404', (req, res) => {
     res.send('Erro 404')
 })
 
+app.get('/categorias', (req, res) => {
+    Categoria.find().lean().then((categorias) => {
+        res.render('categorias/index', { categorias: categorias })
+    }).catch((err) => {
+        req.flash('error_msg', 'Erro listar categorias')
+        res.redirect('/')
+        console.log(err)
+    })
+})
+
+app.get('/categorias/:slug', (req, res) => {
+    Categoria.findOne({ slug: req.params.slug }).lean().then((categoria) => {
+        if (categoria) {
+            Postagem.find({ categoria: categoria._id }).lean().then((postagens) => {
+                res.render('categorias/postagens', { postagens: postagens, categoria: categoria })
+            }).catch((err) => {
+                req.flash('error_msg', 'Erro listar postagens desta categoria')
+                res.redirect('/')
+                console.log(err)
+            })
+        } else {
+            req.flash('error_msg', 'Essa categoria não existe')
+            res.redirect('/')
+        }
+    }).catch((err) => {
+        req.flash('error_msg', 'Erro na página desta categoria')
+        res.redirect('/')
+        console.log(err)
+    })
+})
+
+app.use('/admin', admin)
+app.use('/usuarios', usuarios)
+
+// Outros
+const PORT = process.env.PORT || 8081
 app.listen(PORT, () => {
-    console.log('Escutando na porta: ' + PORT )
+    console.log(`Servidor rodando em http://localhost:${PORT}`)
 })

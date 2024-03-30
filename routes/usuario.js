@@ -1,84 +1,99 @@
 const express = require('express')
-const router = express.Router();
+const router = express.Router()
 const mongoose = require('mongoose')
 const bcrypt = require('bcryptjs')
+const passport = require('passport')
 
-const { eAdmin } = require("../helpers/eAdmin")
+require('../models/Usuario.js')
+const Usuario = mongoose.model('usuarios')
 
-//Arquivos Models
-const { usuarios } = require("../models/Usuario");
-const passport = require('passport');
-
-
-// Rotas 
-router.get('/usuarios', eAdmin, (req,res) =>{
-    usuarios.find().lean().then((usuarios) =>{
-        res.render('usuario/registro', {usuarios: usuarios})
-    })
+router.get('/registro', (req, res) => {
+    res.render('usuarios/registro')
 })
 
-router.get('/usuario/add', eAdmin, (req,res) =>{
-    res.render('usuario/addusuario')
-})
-
-router.post('/usuario/nova', eAdmin, (req,res) =>{
+router.post('/registro', (req, res) => {
     let erros = []
 
-    if(!req.body.nome || req.body.nome == undefined || req.body.nome == null){
-        erros.push({texto: "Nome inválido"}) 
+    if (!req.body.nome || typeof req.body.nome == undefined || req.body.nome == null) {
+        erros.push({ texto: 'Nome inválido!' })
     }
-    if(!req.body.email || req.body.email == undefined || req.body.email == null){
-        erros.push({texto: "E-mail inválido"}) 
+    if (!req.body.email || typeof req.body.email == undefined || req.body.email == null) {
+        erros.push({ texto: 'E-mail inválido!' })
     }
-    if(!req.body.senha || req.body.senha == undefined || req.body.senha == null){
-        erros.push({texto: "Senha inválido"}) 
+    if (!req.body.senha || typeof req.body.senha == undefined || req.body.senha == null) {
+        erros.push({ texto: 'Senha inválida!' })
     }
-    if(req.body.length < 6){
-        erros.push({texto: "Senha muito curta"}) 
+    if (req.body.senha.length < 4) {
+        erros.push({ texto: 'Senha muito curta!' })
     }
-    if(req.body.senha != req.body.senha2){
-        erros.push({texto: "Senhas diferentes"}) 
+    if (req.body.senha != req.body.senha2) {
+        erros.push({ texto: 'Senhas diferentes!' })
     }
-    if(erros.length > 0){
-        
-        res.render("usuario/addusuario", {erros: erros})
-    
-    }else{
 
-        
-        let salt = bcrypt.genSaltSync(10);
-        let hash = bcrypt.hashSync(req.body.senha, salt);
-
-                const novoUsuario = new usuarios({
-                        nome: req.body.nome,
-                        email: req.body.email,
-                        senha : hash
+    if (erros.length > 0) {
+        res.render('usuarios/registro', { erros: erros })
+    } else {
+        Usuario.findOne({ email: req.body.email }).lean().then((usuario) => {
+            if (usuario) {
+                req.flash('error_msg', 'E-mail já cadastrado')
+                res.redirect('/usuarios/registro')
+            } else {
+                const novoUsuario = new Usuario({
+                    nome: req.body.nome,
+                    email: req.body.email,
+                    senha: req.body.senha,
+                    eAdmin: 1
+                })
+                
+                bcrypt.genSalt(10, (erro, salt) => {
+                    bcrypt.hash(novoUsuario.senha, salt, (erro, hash) => {
+                        if (erro) {
+                            req.flash('error_msg', 'Erro ao salvar usuário')
+                            res.redirect('/')
+                            console.log(erro)
+                        } else {
+                            novoUsuario.senha = hash
+                            novoUsuario.save().then(() => {
+                                req.flash('success_msg', 'Usuário cadastrado com sucesso')
+                                res.redirect('/')
+                            }).catch((err) => {
+                                req.flash('error_msg', 'Erro ao cadastrar usuário')
+                                res.redirect('/')
+                                console.log(err)
+                            })
+                        }
                     })
-                novoUsuario.save();
-
-        
-        res.redirect('/admin/usuario')
-        }
-    })
-        
-
-    router.get('/login', (req,res) =>{
-        res.render('usuario/login')
-    })
-
-    router.post('/login', (req,res, next) =>{
-        passport.authenticate("local", {
-            successRedirect: "/",
-            failureRedirect: "login",
-            failureFlash: true
-        })(req, res, next)
-    })
-
-    router.get("/logout", (req, res, next) => {
-        req.logout((err) => {
-            req.flash('success_msg', "Deslogado com sucesso!")
-            res.redirect("/")
+                })
+            }
+        }).catch((err) => {
+            req.flash('error_msg', 'Houve um erro interno')
+            res.redirect('/')
+            console.log(err)
         })
-    })
+    }
+})
 
-module.exports = router;
+router.get('/login', (req, res) => {
+    res.render('usuarios/login')
+})
+
+router.post('/login', (req, res, next) => {
+    passport.authenticate('local', {
+        successRedirect: '/',
+        failureRedirect: '/usuarios/login',
+        failureFlash: true
+    })(req, res, next)
+})
+
+router.get('/logout', (req, res, next) => {
+    req.logout((err) => {
+        if (err) { 
+            return next(err)
+        } else {
+            req.flash('success_msg', 'Deslogado com sucesso')
+            res.redirect('/')  
+        }
+      })
+})
+
+module.exports = router
